@@ -7,6 +7,7 @@ import { CraftingJob } from '../crafting-job.enum';
 import { progressFormulas } from '../formulas/progress-formulas';
 import { qualityFormulas } from '../formulas/quality-formulas';
 import { ingenuityData } from '../formulas/ingenuity-data';
+import { levelDiffData } from '../formulas/leveldiff-data';
 import { SimulationFailCause } from '../simulation-fail-cause.enum';
 import { Class, Instantiable } from '@kaiu/serializer';
 
@@ -94,28 +95,47 @@ export abstract class CraftingAction {
     // Base onFail does nothing, override to implement it, as it wont be used in most cases.
   }
 
-  protected getLevelDifference(simulation: Simulation): number {
-    let recipeLevel = simulation.recipe.rlvl;
-    const stats: CrafterStats = simulation.crafterStats;
-    const crafterLevel = Tables.LEVEL_TABLE[stats.level] || stats.level;
-    let levelDifference = crafterLevel - recipeLevel;
-    // If ingenuity 2
-    if (simulation.hasBuff(Buff.INGENUITY_II)) {
-      recipeLevel = Tables.INGENUITY_II_RLVL_TABLE[simulation.recipe.rlvl] || simulation.recipe.rlvl - 7;
-      levelDifference = crafterLevel - recipeLevel;
-      if (levelDifference < 0) {
-        levelDifference = Math.max(levelDifference, -5);
-      }
+  /**
+   * Calculate the adjusted recipe level for fallback simulations
+   */
+  protected getRecipeLevel(simulation: Simulation): number {
+    if(simulation.hasBuff(Buff.INGENUITY_II)) {
+      return Tables.INGENUITY_II_RLVL_TABLE[simulation.recipe.rlvl] || simulation.recipe.rlvl - 7;
     }
-    // If ingenuity
     if (simulation.hasBuff(Buff.INGENUITY)) {
-      recipeLevel = Tables.INGENUITY_RLVL_TABLE[simulation.recipe.rlvl] || simulation.recipe.rlvl - 5;
-      levelDifference = crafterLevel - recipeLevel;
-      if (levelDifference < 0) {
-        levelDifference = Math.max(levelDifference, -6);
-      }
+      return Tables.INGENUITY_RLVL_TABLE[simulation.recipe.rlvl] || simulation.recipe.rlvl - 5;
     }
-    return levelDifference;
+    return simulation.recipe.rlvl;
+  }
+
+  /**
+   * Calculate the level difference modifier for fallback simulations
+   */
+  protected getLevelDifferenceMultiplier(crafterLevel: number, recipeLevel: number, type: 'Quality' | 'Progress'): number {
+    const mod = Math.min(Math.max(-10 , crafterLevel - recipeLevel), 20);
+    const levelDiffEntry = levelDiffData.find(entry => entry.Id === mod);
+    return levelDiffEntry[type] / 100;
+  }
+
+  /**
+   * Calculate the IG modifier for custom override simulations
+   */
+  protected getIngenuityMultiplier(clvl: number, rlvl: number, type: 'Quality' | 'Progress', level: 1 | 2): number {
+    let id = clvl - rlvl;
+    let ingenuityEntry = ingenuityData.find(row => row.Id === id);
+    let ingenuityMultiplier = ingenuityEntry === undefined ? undefined : ingenuityEntry[`${type}Ingenuity${level}`];
+    let tries = 0;
+    while (ingenuityMultiplier === null || ingenuityMultiplier === undefined && tries < 100) {
+      tries++;
+      id > 0 ? id++ : id--;
+      ingenuityEntry = ingenuityData.find(row => row.Id === id);
+      ingenuityMultiplier = ingenuityEntry === undefined ? undefined : ingenuityEntry[`${type}Ingenuity${level}`];
+    }
+    // If we tried too many times, just return 1, we don't have ingenuity data for that.
+    if (tries >= 100) {
+      ingenuityMultiplier = 1.0;
+    }
+    return ingenuityMultiplier;
   }
 
   protected getBaseProgression(simulation: Simulation): number {
@@ -136,24 +156,6 @@ export abstract class CraftingAction {
     return result;
   }
 
-  protected getIngenuityMultiplier(clvl: number, rlvl: number, type: 'Quality' | 'Progress', level: 1 | 2): number {
-    let id = clvl - rlvl;
-    let ingenuityEntry = ingenuityData.find(row => row.Id === id);
-    let ingenuityMultiplier = ingenuityEntry === undefined ? undefined : ingenuityEntry[`${type}Ingenuity${level}`];
-    let tries = 0;
-    while (ingenuityMultiplier === null || ingenuityMultiplier === undefined && tries < 100) {
-      tries++;
-      id > 0 ? id++ : id--;
-      ingenuityEntry = ingenuityData.find(row => row.Id === id);
-      ingenuityMultiplier = ingenuityEntry === undefined ? undefined : ingenuityEntry[`${type}Ingenuity${level}`];
-    }
-    // If we tried too many times, just return 1, we don't have ingenuity data for that.
-    if (tries >= 100) {
-      ingenuityMultiplier = 1.0;
-    }
-    return ingenuityMultiplier;
-  }
-
   /**
    * Gets base progression, implementation is from ermad's fork
    * (https://github.com/Ermad/ffxiv-craft-opt-web/blob/master/app/js/ffxivcraftmodel.js)
@@ -161,13 +163,11 @@ export abstract class CraftingAction {
    * @returns {number}
    */
   protected getBaseProgressionFallback(simulation: Simulation): number {
-    const recipeLevel = simulation.recipe.rlvl;
+    const recipeLevel = this.getRecipeLevel(simulation);
     const stats: CrafterStats = simulation.crafterStats;
     const crafterLevel = Tables.LEVEL_TABLE[stats.level] || stats.level;
-    const levelDifference = this.getLevelDifference(simulation);
     let baseProgress = 0;
-    let levelCorrectionFactor = 0;
-    let recipeLevelPenalty = 0;
+    let innateRecipeLevelPenalty = 0;
     if (crafterLevel > 250) {
       baseProgress = 1.834712812e-5 * stats.craftsmanship * stats.craftsmanship + 1.904074773e-1 * stats.craftsmanship + 1.544103837;
     } else if (crafterLevel > 110) {
@@ -177,31 +177,14 @@ export abstract class CraftingAction {
     }
 
     // Level boost for recipes below crafter level
-    if (levelDifference > 0) {
-      levelCorrectionFactor += (0.25 / 5) * Math.min(levelDifference, 5);
-    }
-    if (levelDifference > 5) {
-      levelCorrectionFactor += (0.10 / 5) * Math.min(levelDifference - 5, 10);
-    }
-    if (levelDifference > 15) {
-      levelCorrectionFactor += (0.05 / 5) * Math.min(levelDifference - 15, 5);
-    }
-    if (levelDifference > 20) {
-      levelCorrectionFactor += 0.0006 * (levelDifference - 20);
-    }
+    const levelDifferenceModifier = this.getLevelDifferenceMultiplier(crafterLevel, recipeLevel, 'Progress');
 
     // Level penalty for recipes above crafter level
-    if (levelDifference < 0) {
-      levelCorrectionFactor += 0.025 * Math.max(levelDifference, -10);
-      if (Tables.PROGRESS_PENALTY_TABLE[recipeLevel] !== undefined) {
-        recipeLevelPenalty += Tables.PROGRESS_PENALTY_TABLE[recipeLevel];
-      }
+    if (Tables.PROGRESS_PENALTY_TABLE[recipeLevel] !== undefined) {
+      innateRecipeLevelPenalty += Tables.PROGRESS_PENALTY_TABLE[recipeLevel];
     }
 
-    // Level factor is rounded to nearest percent
-    levelCorrectionFactor = Math.round(levelCorrectionFactor * 100) / 100;
-
-    return baseProgress * (1 + levelCorrectionFactor) * (1 + recipeLevelPenalty);
+    return baseProgress * levelDifferenceModifier * (1 + innateRecipeLevelPenalty);
   }
 
 
@@ -224,11 +207,10 @@ export abstract class CraftingAction {
   }
 
   protected getBaseQualityFallback(simulation: Simulation): number {
-    const recipeLevel = simulation.recipe.rlvl;
+    const recipeLevel = this.getRecipeLevel(simulation);
     const stats: CrafterStats = simulation.crafterStats;
-    let recipeLevelPenalty = 0;
-    let levelCorrectionFactor = 0;
-    const levelDifference = this.getLevelDifference(simulation);
+    const crafterLevel = Tables.LEVEL_TABLE[stats.level] || stats.level;
+    let innateRecipeLevelPenalty = 0;
 
     const baseQuality = 3.46e-5 * stats.getControl(simulation) * stats.getControl(simulation)
       + 0.3514 * stats.getControl(simulation)
@@ -242,21 +224,20 @@ export abstract class CraftingAction {
           const penaltyLevel = +key;
           const penaltyValue = Tables.QUALITY_PENALTY_TABLE[penaltyLevel];
           if (recipeLevel >= penaltyLevel && penaltyLevel >= recipeLevelPenaltyLevel) {
-            recipeLevelPenalty = penaltyValue;
+            innateRecipeLevelPenalty = penaltyValue;
             recipeLevelPenaltyLevel = penaltyLevel;
           }
         });
       // Smaller penalty applied for additional recipe levels within the tier
-      recipeLevelPenalty += (recipeLevel - recipeLevelPenaltyLevel) * -0.0002;
+      innateRecipeLevelPenalty += (recipeLevel - recipeLevelPenaltyLevel) * -0.0002;
     } else {
-      recipeLevelPenalty += recipeLevel * -0.00015 + 0.005;
+      innateRecipeLevelPenalty += recipeLevel * -0.00015 + 0.005;
     }
 
     // Level penalty for recipes above crafter level
-    if (levelDifference < 0) {
-      levelCorrectionFactor = 0.05 * Math.max(levelDifference, -10);
-    }
-    return baseQuality * (1 + levelCorrectionFactor) * (1 + recipeLevelPenalty);
+    const levelDifferenceModifier = this.getLevelDifferenceMultiplier(crafterLevel, recipeLevel, 'Quality');
+
+    return baseQuality * levelDifferenceModifier * (1 + innateRecipeLevelPenalty);
   }
 
   /**

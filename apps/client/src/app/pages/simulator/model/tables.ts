@@ -49,7 +49,7 @@ export class Tables {
     68: 285,
     69: 288,
     70: 290,
-    71: 385,
+    71: 390,
     72: 395,
     73: 400,
     74: 403,
@@ -87,9 +87,9 @@ export class Tables {
     49: 44,
     50: 45,
     55: 50,     // 50_1star     *** unverified
-    70: 51,     // 50_2star     *** unverified
-    90: 58,     // 50_3star     *** unverified
-    110: 59,    // 50_4star     *** unverified
+    70: 50,     // 50_2star     *** unverified
+    90: 54,     // 50_3star     *** unverified
+    110: 54,    // 50_4star     *** unverified
     115: 100,   // 51 @ 169/339 difficulty
     120: 101,   // 51 @ 210/410 difficulty
     125: 102,   // 52
@@ -150,9 +150,9 @@ export class Tables {
     48: 40,
     49: 41,
     50: 42,
-    55: 47,     // 50_1star     *** unverified
-    70: 48,     // 50_2star     *** unverified
-    90: 56,     // 50_3star     *** unverified
+    55: 50,     // 50_1star     *** unverified
+    70: 50,     // 50_2star     *** unverified
+    90: 53,     // 50_3star     *** unverified
     110: 57,    // 50_4star     *** unverified
     115: 97,    // 51 @ 169/339 difficulty
     120: 99,    // 51 @ 210/410 difficulty

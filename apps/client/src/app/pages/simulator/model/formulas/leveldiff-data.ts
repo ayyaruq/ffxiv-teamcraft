@@ -1,0 +1,125 @@
+export const levelDiffData = [{
+  'Id': -10,
+  'Progress': 75,
+  'Quality': 50
+}, {
+  'Id': -9,
+  'Progress': 77,
+  'Quality': 55
+}, {
+  'Id': -8,
+  'Progress': 80,
+  'Quality': 60,
+}, {
+  'Id': -7,
+  'Progress': 82,
+  'Quality': 65,
+}, {
+  'Id': -6,
+  'Progress': 85,
+  'Quality': 70,
+}, {
+  'Id': -5,
+  'Progress': 87,
+  'Quality': 75,
+}, {
+  'Id': -4,
+  'Progress': 90,
+  'Quality': 80,
+}, {
+  'Id': -3,
+  'Progress': 92,
+  'Quality': 85,
+}, {
+  'Id': -2,
+  'Progress': 95,
+  'Quality': 90,
+}, {
+  'Id': -1,
+  'Progress': 97,
+  'Quality': 95,
+}, {
+  'Id': 0,
+  'Progress': 100,
+  'Quality': 100,
+}, {
+  'Id': 1,
+  'Progress': 105,
+  'Quality': 100,
+}, {
+  'Id': 2,
+  'Progress': 110,
+  'Quality': 100,
+}, {
+  'Id': 3,
+  'Progress': 115,
+  'Quality': 100,
+}, {
+  'Id': 4,
+  'Progress': 120,
+  'Quality': 100,
+}, {
+  'Id': 5,
+  'Progress': 125,
+  'Quality': 100,
+}, {
+  'Id': 6,
+  'Progress': 127,
+  'Quality': 100,
+}, {
+  'Id': 7,
+  'Progress': 129,
+  'Quality': 100,
+}, {
+  'Id': 8,
+  'Progress': 131,
+  'Quality': 100,
+}, {
+  'Id': 9,
+  'Progress': 133,
+  'Quality': 100,
+}, {
+  'Id': 10,
+  'Progress': 135,
+  'Quality': 100,
+}, {
+  'Id': 11,
+  'Progress': 137,
+  'Quality': 100,
+}, {
+  'Id': 12,
+  'Progress': 139,
+  'Quality': 100,
+}, {
+  'Id': 13,
+  'Progress': 141,
+  'Quality': 100,
+}, {
+  'Id': 14,
+  'Progress': 143,
+  'Quality': 100,
+}, {
+  'Id': 15,
+  'Progress': 145,
+  'Quality': 100,
+}, {
+  'Id': 16,
+  'Progress': 147,
+  'Quality': 100,
+}, {
+  'Id': 17,
+  'Progress': 147,
+  'Quality': 100,
+}, {
+  'Id': 18,
+  'Progress': 148,
+  'Quality': 100,
+}, {
+  'Id': 19,
+  'Progress': 149,
+  'Quality': 100,
+}, {
+  'Id': 20,
+  'Progress': 150,
+  'Quality': 100,
+}];
