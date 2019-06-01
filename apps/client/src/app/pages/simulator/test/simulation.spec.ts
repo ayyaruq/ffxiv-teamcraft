@@ -18,7 +18,11 @@ import { Observe } from '../model/actions/other/observe';
 import { FocusedSynthesis } from '../model/actions/progression/focused-synthesis';
 import { HastyTouch } from '../model/actions/quality/hasty-touch';
 import { RapidSynthesisII } from '../model/actions/progression/rapid-synthesis-ii';
-import { acchan_stats, alc_70_350_stats, gradeII_infusion_of_str_Recipe, infusionOfMind_Recipe } from './mocks';
+import {
+  acchan_stats, acchan_matcha_stats, alc_70_350_stats, arkhelyi_stats, aurelle_stats,
+  chocobo_weathervane_Recipe, darksteel_nugget_Recipe, darksteel_ingot_Recipe, wolfram_ingot_Recipe,
+  beetle_glue_Recipe, gradeII_infusion_of_str_Recipe, infusionOfMind_Recipe
+} from './mocks';
 import { ComfortZone } from '../model/actions/buff/comfort-zone';
 import { SpecialtyReflect } from '../model/actions/other/specialty-reflect';
 import { PieceByPiece } from '../model/actions/progression/piece-by-piece';
@@ -35,33 +39,33 @@ describe('Craft simulator tests', () => {
 
   describe('Base tests', () => {
     it('should be able to predict correct progression on action', () => {
-      const simulation = new Simulation(infusionOfMind_Recipe, [new SteadyHand(), new BasicSynthesis()], alc_70_350_stats);
+      const simulation = new Simulation(infusionOfMind_Recipe, [new SteadyHand(), new BasicSynthesis()], acchan_stats);
       simulation.run();
-      expect(simulation.progression).toBeCloseTo(353, 1);
+      expect(simulation.progression).toBe(422);
     });
 
     it('should be able to predict correct progression on action for high level crafts', () => {
       const simulation = new Simulation(gradeII_infusion_of_str_Recipe, [new BasicSynthesis()], acchan_stats);
-      simulation.run(true);
-      expect(simulation.progression).toBe(237);
+      simulation.run();
+      expect(simulation.progression).toBe(277);
     });
 
     it('should be able to predict correct quality increase on action', () => {
       const simulation = new Simulation(gradeII_infusion_of_str_Recipe, [new BasicTouch()], acchan_stats);
       simulation.run(true);
-      expect(simulation.quality).toBe(290);
+      expect(simulation.quality).toBe(330);
     });
 
     it('should apply stroke of genius on specialist craft start', () => {
       const simulation = new Simulation(infusionOfMind_Recipe, [new BasicSynthesis()], alc_70_350_stats);
-      simulation.run();
+      simulation.run(true);
       expect(simulation.availableCP).toBe(489);
       expect(simulation.maxCP).toBe(489);
     });
 
     it('should remove CP properly on action', () => {
       const simulation = new Simulation(infusionOfMind_Recipe, [new SteadyHand(), new BasicSynthesis()], alc_70_350_stats);
-      simulation.run();
+      simulation.run(true);
       expect(simulation.availableCP).toBe(467);
     });
 
@@ -117,9 +121,9 @@ describe('Craft simulator tests', () => {
       it('should affect quality increase properly', () => {
         const simulation = new Simulation(infusionOfMind_Recipe,
           [new InnerQuiet(), new SteadyHandII(), new BasicTouch(), new BasicTouch()],
-          alc_70_350_stats);
+          acchan_stats);
         simulation.run(true);
-        expect(simulation.quality).toBeCloseTo(1262, 1);
+        expect(simulation.quality).toBe(1510); // 679+831
       });
     });
 
@@ -163,17 +167,17 @@ describe('Craft simulator tests', () => {
       it('should properly reduce recipe level with Ingenuity, influencing progression', () => {
         const simulation = new Simulation(infusionOfMind_Recipe,
           [new SteadyHand(), new Ingenuity(), new BasicSynthesis()],
-          alc_70_350_stats);
+          acchan_stats);
         simulation.run();
-        expect(simulation.progression).toBe(414);
+        expect(simulation.progression).toBe(541);
       });
 
       it('should properly reduce recipe level with Ingenuity II, influencing progression', () => {
         const simulation = new Simulation(infusionOfMind_Recipe,
           [new SteadyHand(), new IngenuityII(), new BasicSynthesis()],
-          alc_70_350_stats);
+          acchan_stats);
         simulation.run();
-        expect(simulation.progression).toBe(459);
+        expect(simulation.progression).toBe(549);
       });
     });
 
@@ -190,11 +194,99 @@ describe('Craft simulator tests', () => {
         const simulation = new Simulation(infusionOfMind_Recipe,
           [new MakersMark(), new SteadyHand(), new FlawlessSynthesis()],
           alc_70_350_stats);
-        simulation.run();
+        simulation.run(true);
         expect(simulation.getBuff(Buff.MAKERS_MARK).duration).toBe(27);
         expect(simulation.progression).toBe(40);
         expect(simulation.availableCP).toBe(447);
         expect(simulation.durability).toBe(80);
+      });
+    });
+  });
+
+  describe('Level 50 tests', () => {
+    it('should get accurate unbuffed base quality', () => {
+      const simulation = new Simulation(chocobo_weathervane_Recipe,
+        [new SteadyHandII(), new BasicTouch()],
+        aurelle_stats);
+      simulation.run(true);
+      expect(simulation.quality).toBe(183);
+    });
+
+    describe('1-star quality tests', () => {
+      it('should get accurate unbuffed quality', () => {
+        const simulation = new Simulation(darksteel_nugget_Recipe,
+          [new SteadyHandII(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(134);
+      });
+
+      it('should use an r50 IG1 level modifier', () => {
+        const simulation = new Simulation(darksteel_nugget_Recipe,
+          [new SteadyHandII(), new Ingenuity(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(178);
+      });
+
+      it('should use an r50 IG2 level modifier', () => {
+        const simulation = new Simulation(darksteel_nugget_Recipe,
+          [new SteadyHandII(), new IngenuityII(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(178);
+      });
+    });
+
+    describe('2-star quality tests', () => {
+      it('should get accurate unbuffed quality', () => {
+        const simulation = new Simulation(darksteel_ingot_Recipe,
+          [new SteadyHandII(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(89);
+      });
+
+      it('should use an r50 IG1 level modifier', () => {
+        const simulation = new Simulation(darksteel_ingot_Recipe,
+          [new SteadyHandII(), new Ingenuity(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(178);
+      });
+
+      it('should use an r50 IG2 level modifier', () => {
+        const simulation = new Simulation(darksteel_ingot_Recipe,
+          [new SteadyHandII(), new IngenuityII(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(178);
+      });
+    });
+
+    describe('3-star quality tests', () => {
+      it('should get accurate unbuffed quality', () => {
+        const simulation = new Simulation(wolfram_ingot_Recipe,
+          [new SteadyHandII(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(89);
+      });
+
+      it('should use an r54 IG1 level modifier', () => {
+        const simulation = new Simulation(wolfram_ingot_Recipe,
+          [new SteadyHandII(), new Ingenuity(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(142);
+      });
+
+      it('should use an r53 IG2 level modifier', () => {
+        const simulation = new Simulation(wolfram_ingot_Recipe,
+          [new SteadyHandII(), new IngenuityII(), new BasicTouch()],
+          aurelle_stats);
+        simulation.run(true);
+        expect(simulation.quality).toBe(151);
       });
     });
   });
@@ -224,6 +316,15 @@ describe('Craft simulator tests', () => {
       expect(report.medianHQPercent).toBe(1);
     });
 
+    it('should be consistent with in-game levelling Ingenuity', () => {
+      const simulation = new Simulation(beetle_glue_Recipe,
+        [new CarefulSynthesisIII(), new Ingenuity(), new CarefulSynthesisIII()],
+        arkhelyi_stats);
+      simulation.run(true);
+      expect(simulation.progression).toBe(593);
+      expect(simulation.availableCP).toBe(327);
+    });
+
     it('should be consistent with current rotations', () => {
       const acchan_macro = [new InitialPreparations(), new ComfortZone(), new InnerQuiet(), new SpecialtyReflect(),
         new SteadyHandII(), new PieceByPiece(), new PrudentTouch(), new PrudentTouch(), new PrudentTouch(), new PrudentTouch(),
@@ -232,11 +333,11 @@ describe('Craft simulator tests', () => {
         new Innovation(), new PrudentTouch(), new GreatStrides(), new ByregotsMiracle(), new PieceByPiece(),
         new Rumination(), new Ingenuity(), new Observe(), new FocusedSynthesis(), new Observe(), new FocusedSynthesis(),
         new CarefulSynthesisIII()];
-      const simulation = new Simulation(gradeII_infusion_of_str_Recipe, acchan_macro, acchan_stats);
+      const simulation = new Simulation(gradeII_infusion_of_str_Recipe, acchan_macro, acchan_matcha_stats);
       simulation.run(true);
-      expect(simulation.progression).toBe(3555);
-      expect(simulation.quality).toBe(24831);
-      expect(simulation.availableCP).toBe(0);
+      expect(simulation.progression).toBe(3824);
+      expect(simulation.quality).toBe(30366); // 16000+14366
+      expect(simulation.availableCP).toBe(10);
     });
   });
 });
